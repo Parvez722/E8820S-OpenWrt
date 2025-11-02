@@ -137,7 +137,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt-E8820S-official-23.05
+        name: OpenWrt-E8820S-official-24.10-${{ github.run_number }}
         path: ${{ env.FIRMWARE }}
     
     - name: Publish firmware *.bin to Release
@@ -146,6 +146,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: OpenWrt-23.05-${{ github.run_number }}
+        tag_name: OpenWrt-24.10-${{ github.run_number }}
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/targets/*/*/*.bin
