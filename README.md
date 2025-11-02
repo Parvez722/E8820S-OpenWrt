@@ -1,7 +1,9 @@
 ## 描述
-这是一个中兴ZTE-E8820S自用固件仓库，官方源码采用23.05版本，由于24.10版本有奇怪的重启bug，请见[#issues/19164](https://github.com/openwrt/openwrt/issues/19164)
+这是一个中兴ZTE-E8820S自用精简固件仓库，官方源码采用23.05版本，由于24.10版本有奇怪的重启bug，请见[#issues/19164](https://github.com/openwrt/openwrt/issues/19164)
 
 **但其实openwrt-23.05甚至老毛子或者immortalwrt，我也遇到过很多次断电后重启以后丢wifi的情况，感觉是openwrt固件写的有问题**
+
+所以这里写了两个版本的编译，可以release翻一下自取
 
 ## 固件软件包
 配置为
@@ -9,7 +11,6 @@
 - usb
 - mt76xx wifi
 - passwall (shadowsocks-rust,ssr,ss,xray)
-- smartdns
 - eip93 (硬件加速）
 - kmod-cryptodev (Cryptographic Hardware Accelerators in user level)
 - kmod-crypto-* (frequenctly used crypto kmod)
