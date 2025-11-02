@@ -1,46 +1,15 @@
-##
-#
-# 感谢p3terx大神的一键编译脚本
-# 
-# https://github.com/P3TERX/Actions-OpenWrt
-# Description: Build OpenWrt using GitHub Actions
-#
-#修改以下代码或者开启触发开关都好，要严格按格式对好,前面有多少空格也要看清楚
-#代码里有 name: 后面的内容随便改,冒号后面是有个空格的,如果修改固件名字就要考虑能不能显示出你想要的
 
 permissions:
   contents: write
   actions: write
-name: E8820S 官方源码 openwrt-23.05
+name: E8820S 官方源码 openwrt-24.10
 
 on: 
   workflow_dispatch:
-#编辑任意指定文件触发开始编译(去掉下面5个#开启,最下面一行是指定修改什么文件就触发编译,我现在是修改diy.config文件触发)
-#  push:
-#    branches:
-#      - master
-#    paths:
-#      - '.config'
-
-
-#release发布触发开始编译(只是一个触发条件,不会发布的,又麻烦,没卵用,不用研究)
-#  release:
-#    types: published
-
-
-#定时触发开始编译(把下面两个#去掉开启,时间设置请看定时编译说明)
-#  schedule:
-#    - cron: 0 20 * * 6
-
-
-#点☆Star触发开始编译
-  # watch:
-  #   types: started
-
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
-  REPO_BRANCH: openwrt-23.05
+  REPO_BRANCH: openwrt-24.10
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: config/e8820s-official-openwrt.config
   DIY_P1_SH: script/diy-part1.sh
@@ -51,11 +20,11 @@ env:
   UPLOAD_WETRANSFER: true
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
-  PATCH1: patch/0001-ZTE8820S.patch
-  PATCH2: patch/0002-ramips-add-support-for-mtk-eip93-crypto-engine.patch
+
+
 jobs:
   build:
-    name: 编译E8820S 官方源码 openwrt-23.05
+    name: 编译E8820S 官方源码 openwrt-24.10
     runs-on: ubuntu-22.04
 
     steps:
@@ -69,7 +38,7 @@ jobs:
           repository: ${{ github.repository }}
           retain_days: 0 
           keep_minimum_runs: 0      
-          delete_run_by_conclusion_pattern: "failure,cancelled,skipped,timed_out" # 删除这些状态的记录
+          delete_run_by_conclusion_pattern: "failure,cancelled,skipped,timed_out"
 
     - name: Maximize build space
       uses: AdityaGarg8/remove-unwanted-software@v5
@@ -80,7 +49,7 @@ jobs:
          remove-codeql: 'true'          # ~5.4 GB
          remove-docker-images: 'true'   # ~3.2 GB
          remove-large-packages: 'true'  # ~3.1 GB
-         # remove-cached-tools: 'true'    # ~8.3 GB
+         remove-cached-tools: 'true'    # ~8.3 GB
          remove-swapfile: 'true'        # ~4 GB 
 
     - name: Initialization environment
@@ -105,10 +74,6 @@ jobs:
         df -hT $PWD
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-
-    - name: 应用patch
-      run: |
-        cd /workdir/openwrt && patch -p0001 < $GITHUB_WORKSPACE/$PATCH1 && patch -p0001 < $GITHUB_WORKSPACE/$PATCH2
       
     - name: 加载Cache缓存
       uses: klever1988/cachewrtbuild@main
@@ -151,10 +116,6 @@ jobs:
       run: |
         cd openwrt
         echo -e "$(nproc) thread compile"
-        # make toolchain/clean
-        # make toolchain/install || make toolchain/install -j1 V=sc
-        # make -j$(nproc) || make -j1 || make -j1 V=s
-        # make toolchain/install -j$(nproc)
         make -j$(nproc)
         echo "::set-output name=status::success"
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
@@ -169,7 +130,6 @@ jobs:
       id: organize
       run: |
         cd openwrt/bin
-        # rm -rf packages
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
