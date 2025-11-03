@@ -10,7 +10,7 @@
 - zerotier
 - usb
 - mt76xx wifi
-- passwall (shadowsocks-rust,ssr,ss,xray)
+- passwall (shadowsocks-rust,ss,xray)
 - eip93 (硬件加速）
 - kmod-cryptodev (Cryptographic Hardware Accelerators in user level)
 - kmod-crypto-* (frequenctly used crypto kmod)
