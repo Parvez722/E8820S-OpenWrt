@@ -50,3 +50,6 @@
 
 ## 预览
 <img width="1444" height="877" alt="image" src="https://github.com/user-attachments/assets/7a80c0c8-303b-49cf-a001-952f426b76ee" />
+
+<img width="840" height="168" alt="image" src="https://github.com/user-attachments/assets/8d624274-b7c6-4192-b1ee-3c1ccd6f145d" />
+
