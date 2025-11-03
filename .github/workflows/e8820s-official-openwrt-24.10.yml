@@ -20,7 +20,7 @@ env:
   UPLOAD_WETRANSFER: true
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
-  PATCH1: patch/
+  PATCH1: patch/0001-ZTE8820S.patch
 
 jobs:
   build:
