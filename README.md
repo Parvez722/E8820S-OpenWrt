@@ -46,7 +46,7 @@
 |               8192 |             19.77      |       12.32        |       46.03 |
 |              16384 |             19.83      |       12.34        |       54.14 |
 
-若跑专线，建议使用纯ChaCha20或者ctr，否则用reality
+若跑专线，建议使用纯ChaCha20或者vless-encryption，否则用reality
 
 ## 预览
 <img width="1444" height="877" alt="image" src="https://github.com/user-attachments/assets/7a80c0c8-303b-49cf-a001-952f426b76ee" />
