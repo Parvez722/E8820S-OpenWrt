@@ -20,7 +20,7 @@ env:
   UPLOAD_WETRANSFER: true
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
-
+  PATCH1: patch/
 
 jobs:
   build:
