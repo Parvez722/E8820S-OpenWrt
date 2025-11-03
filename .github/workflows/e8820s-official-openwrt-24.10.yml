@@ -25,7 +25,7 @@ env:
 jobs:
   build:
     name: 编译E8820S 官方源码 openwrt-24.10
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
     - name: 准备结束
@@ -101,7 +101,8 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-
+        sed -i 's/--set=llvm\.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/' feeds/packages/lang/rust/Makefile
+    
     - name: 下载软件包
       id: package
       run: |
