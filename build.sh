@@ -56,7 +56,8 @@ sudo --preserve-env=JOBS,BASE_DIR,OPENWRT_BRANCH,REPO_URL,BUILD_USER \
   "${BASE_DIR}/script/diy-part1.sh"
   "${BASE_DIR}/script/diy-part2.sh"
   patch -p1 < "${BASE_DIR}/patch/0001-ZTE8820S.patch"
-
+  patch -p2 < "${BASE_DIR}/patch/0002-ramips-add-support-for-mtk-eip93-crypto-engine.patch"
+  
   # 3.3 feeds
   ./scripts/feeds clean
   ./scripts/feeds update -a
