@@ -52,7 +52,7 @@ sudo --preserve-env=JOBS,BASE_DIR,OPENWRT_BRANCH,REPO_URL,BUILD_USER \
   # 3.2 配置/脚本/补丁
   cp "${BASE_DIR}/config/e8820s-official-openwrt.config" openwrt/.config
   cd openwrt
-  chmod a+x "${BASE_DIR}/script/diy-part1.sh" "${BASE_DIR}/script/diy-part2.sh" "${BASE_DIR}/script/update-xray.sh"
+  chmod a+x "${BASE_DIR}/script/diy-part1.sh" "${BASE_DIR}/script/diy-part2.sh" "${BASE_DIR}/script/update-xray.sh" "${BASE_DIR}/script/update-golang.sh" 
   "${BASE_DIR}/script/diy-part1.sh"
   "${BASE_DIR}/script/diy-part2.sh"
   
@@ -64,7 +64,7 @@ sudo --preserve-env=JOBS,BASE_DIR,OPENWRT_BRANCH,REPO_URL,BUILD_USER \
   ./scripts/feeds update -a
   ./scripts/feeds install -a
   "${BASE_DIR}/script/update-xray.sh"
-  
+  "${BASE_DIR}/script/update-golang.sh" 
   # 3.4 配置与下载
   make defconfig
   make download -j"${JOBS}"
