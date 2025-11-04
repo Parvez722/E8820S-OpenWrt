@@ -1,0 +1,127 @@
+name: Remote Build via AliceInit
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up build variables
+      run: |
+        echo "BUILD_CMD=${{ secrets.BUILD_COMMAND }}" >> $GITHUB_ENV
+        echo "API_TOKEN=${{ secrets.API_TOKEN }}" >> $GITHUB_ENV
+        echo "SSH_PRIVATE_KEY_ID=${{ secrets.SSH_PRIVATE_KEY_ID }}" >> $GITHUB_ENV
+        printf '%b\n' "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+        chmod 600 private_key.pem
+
+    - name: Check Instance Existence
+      id: check-instance
+      run: |
+        resp=$(curl 'https://app.alice.ws/cli/v1/Evo/Instance' \
+          -H "KP-APIToken: $API_TOKEN")
+        if echo "$resp" | jq -e '.data | length > 0' > /dev/null; then
+          echo "Instance already exists, skipping creation."
+          echo "should_publish=false" >> $GITHUB_OUTPUT
+          ip=$(echo $resp | jq -r .data.[0].ipv4)
+          id=$(echo $resp | jq -r .data.[0].id)
+          echo "::add-mask::$ip"
+          echo "::add-mask::$id"
+          echo "ip=$ip" >> "$GITHUB_OUTPUT"
+          echo "id=$id" >> "$GITHUB_ENV"
+        else
+          echo "No existing instance found, proceeding with creation."
+          echo "should_publish=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create AliceInit instance
+      id: provision
+      if: ${{ steps.check-instance.outputs.should_publish == 'true' }}
+      run: |
+        resp=$(curl -X POST 'https://app.alice.ws/cli/v1/Evo/Deploy' \
+          -H "KP-APIToken: $API_TOKEN" \
+          --form "product_id=39" \
+          --form "os_id=10" \
+          --form "time=4" \
+          --form "sshKey=$SSH_PRIVATE_KEY_ID")
+        data=$(echo $resp| jq -r .data)
+        ip=$(echo $data | jq -r .ipv4)
+        id=$(echo $data | jq -r .id)
+        echo "::add-mask::$ip"
+        echo "::add-mask::$id"
+        echo "ip=$ip" >> "$GITHUB_OUTPUT"
+        echo "id=$id" >> "$GITHUB_ENV"
+        sleep 60s
+
+    - name: Get Instance IP
+      id: get_ip
+      run: |
+        
+        if [ -n "${{ steps.check-instance.outputs.ip }}" ]; then
+          ip="${{ steps.check-instance.outputs.ip }}"
+        else
+          ip="${{ steps.provision.outputs.ip }}"
+        fi
+        echo "ip=$ip" >> $GITHUB_OUTPUT
+
+    - name: Wait for instance to be ready
+      run: |
+        echo "Waiting for instance to respond"
+        if [ ! -d "alice-runner" ]; then
+            git clone "https://github.com/${{ github.repository }}"
+        fi
+        bash alice-runner/local_scripts/*.sh
+        ip=${{ steps.get_ip.outputs.ip }}
+        for i in {1..5}; do
+          if ssh -o BatchMode=yes \
+          -o ConnectTimeout=5 \
+          -o StrictHostKeyChecking=no \
+          -i private_key.pem \
+          root@$ip exit; then
+            echo "✅ Instance is ready!"
+            break
+          else
+            echo "Waiting for instance... ($i/5)"
+            sleep 5
+          fi
+        done
+
+    - name: Build on Remote
+      id: build
+      run: |
+        ip=${{ steps.get_ip.outputs.ip }}
+        ssh -o StrictHostKeyChecking=no -i private_key.pem root@$ip << 'EOF'
+          echo 127.0.0.1 $(hostname) >> /etc/hosts
+          apt update && apt install -y curl tar xz-utils git jq unzip snapd
+          [ ! -d "app" ] && git clone https://github.com/${{ vars.REPO }} app
+          if [ ! -d "alice-runner" ]; then
+          git clone "https://github.com/${{ github.repository }}"
+          fi
+          cd alice-runner && \
+          bash *.sh && \
+          cd ..
+          source ~/.profile
+          cd app && mkdir -p _output && ${{ secrets.BUILD_COMMAND }}
+          tar -czf build-output.tar.gz ./_output
+        EOF
+        echo "build_output=true" >> $GITHUB_OUTPUT
+
+    - name: Download build artifact
+      run: |
+        ip=${{ steps.get_ip.outputs.ip }}
+        scp -o StrictHostKeyChecking=no -i private_key.pem root@$ip:app/build-output.tar.gz .
+
+#    - name: Delete AliceInit instance
+#      if: ${{ steps.build.outputs.build_output == 'true' }}
+#      run: |
+#        curl -X POST "https://app.alice.ws/cli/v1/Evo/Destroy" -H "KP-APIToken: $API_TOKEN" --form "id=$id"
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      if: ${{ steps.build.outputs.build_output == 'true' }}
+      with:
+        name: build-output.tar.gz
+        path: build-output.tar.gz
