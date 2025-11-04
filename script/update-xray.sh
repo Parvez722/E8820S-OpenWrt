@@ -1,4 +1,4 @@
-
+#!/bin/bash
 want_ver="${1:-latest}"
 
 # ---- 1) 自动定位 xray-core Makefile ----
