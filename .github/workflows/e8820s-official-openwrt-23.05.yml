@@ -101,17 +101,18 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
         chmod a+x $GITHUB_WORKSPACE/script/update-xray.sh
+      
     - name: update feeds
       run: cd openwrt && ./scripts/feeds update -a
 
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
       
-    - name: Update xray Package
-      run: cd openwrt && bash $GITHUB_WORKSPACE/script/update-xray.sh
+    # - name: Update xray Package
+    #   run: cd openwrt && bash $GITHUB_WORKSPACE/script/update-xray.sh
       
-    - name: Update golang
-      run: cd openwrt && bash $GITHUB_WORKSPACE/script/update-golang.sh
+    # - name: Update golang
+    #   run: cd openwrt && bash $GITHUB_WORKSPACE/script/update-golang.sh
     
     - name: load config 
       run: |
