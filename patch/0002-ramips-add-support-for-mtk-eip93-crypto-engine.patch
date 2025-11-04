@@ -39,21 +39,21 @@ index 2e888742d0..58e478d6ef 100644
  define KernelPackage/crypto-kpp
    TITLE:=Key-agreement Protocol Primitives
 diff --git a/target/linux/ramips/dts/mt7621.dtsi b/target/linux/ramips/dts/mt7621.dtsi
-index 3e076741a9..63000cd420 100644
+index 3e076741a9..aad63c39c3 100644
 --- a/target/linux/ramips/dts/mt7621.dtsi
 +++ b/target/linux/ramips/dts/mt7621.dtsi
-@@ -437,6 +437,14 @@
+@@ -436,7 +436,13 @@
+                clocks = <&nficlock>;
                 clock-names = "nfi_clk";
         };
-
-+       crypto: crypto@1e004000 {
-+               compatible = "mediatek,mtk-eip93";
-+               reg = <0x1e004000 0x1000>;
+-
++        crypto: crypto@1e004000 {
++                compatible = "mediatek,mtk-eip93";
++                reg = <0x1e004000 0x1000>;
 +
-+               interrupt-parent = <&gic>;
-+               interrupts = <GIC_SHARED 19 IRQ_TYPE_LEVEL_HIGH>;
-+       };
-+
++                interrupt-parent = <&gic>;
++                interrupts = <GIC_SHARED 19 IRQ_TYPE_LEVEL_HIGH>;
++        };
         ethernet: ethernet@1e100000 {
                 compatible = "mediatek,mt7621-eth";
                 reg = <0x1e100000 0x10000>;
