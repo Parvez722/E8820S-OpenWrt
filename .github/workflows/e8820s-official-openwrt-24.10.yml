@@ -77,18 +77,8 @@ jobs:
     - name: clone openwrt src
       run: |
         df -hT $PWD
-        [ -d openwrt ] && rm -rf openwrt
         git clone $REPO_URL -b $REPO_BRANCH openwrt
-
         
-    - name: load download cache
-      uses: actions/cache@v4
-      with:
-        path: ${{ github.workspace }}/openwrt/dl
-        key: dl-${{ hashFiles('openwrt/feeds.conf*', 'openwrt/.config') }}
-        restore-keys: |
-          dl-
-          
     - name: load cache
       uses: klever1988/cachewrtbuild@main
       with:
@@ -120,15 +110,40 @@ jobs:
         $GITHUB_WORKSPACE/$DIY_P2_SH
         sed -i 's/--set=llvm\.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/' feeds/packages/lang/rust/Makefile
     
-    - name: download packages
-      id: package
+
+    - name: Restore dl cache
+      id: dlcache
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ github.workspace }}/openwrt/dl
+        key: dl-${{ runner.os }}-${{ hashFiles('openwrt/feeds.conf*', 'openwrt/.config') }}
+        restore-keys: |
+          dl-${{ runner.os }}-
+      
+    # 2) 运行下载
+    - name: make download
+      id: download
       run: |
+        set -euxo pipefail
         cd openwrt
-        make defconfig
-        make download -j4
-        find dl -size -1024c -exec ls -l {} \;
-        find dl -size -1024c -exec rm -f {} \;
-        
+        make download
+      
+      # 2.1 可选：保存前做一次健康检查，防止 *.broken / *.failed 混入
+    - name: Check dl health
+      run: |
+        set -e
+        if find "$GITHUB_WORKSPACE/openwrt/dl" -type f \( -name '*.broken' -o -name '*.failed' \) | grep -q .; then
+          echo "Broken downloads found in dl/. Refusing to cache."; exit 1
+        fi
+      
+    # 3) 仅当下载成功 且 本次不是 cache-hit 时才保存
+    - name: Save dl cache
+      if: ${{ success() && steps.dlcache.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ github.workspace }}/openwrt/dl
+        key: dl-${{ runner.os }}-${{ hashFiles('openwrt/feeds.conf*', 'openwrt/.config') }}
+
     - name: compile
       id: compile
       run: |
