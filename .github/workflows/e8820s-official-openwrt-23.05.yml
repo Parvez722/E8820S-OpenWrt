@@ -130,7 +130,7 @@ jobs:
       run: cd openwrt && ./scripts/feeds install -a
       
     - name: Update xray Package
-      run: $GITHUB_WORKSPACE/script/update-xray.sh
+      run: cd openwrt && bash $GITHUB_WORKSPACE/script/update-xray.sh
       
     - name: 加载.config设置
       run: |
