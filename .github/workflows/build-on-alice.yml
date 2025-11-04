@@ -182,7 +182,7 @@ jobs:
 
       - name: 通知后续：触发 “在 Self-hosted 上执行 Build” 工作流
         env:
-          WORKFLOW_FILE: "e8820s-official-openwrt-23.05.yml"
+          WORKFLOW_FILE: ${{ vars.WORKFLOW }} # workflows文件全名(如xxx.yml)或者workflow的name
         run: |
           echo "触发 build-on-selfhosted.yml"
           branch="main"
