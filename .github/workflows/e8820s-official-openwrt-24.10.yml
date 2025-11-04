@@ -165,13 +165,3 @@ jobs:
         body_path: release.txt
         files: |
             ${{ env.FIRMWARE }}/targets/*/*/*.bin
-
-    - name: Destory alice
-      if: ${{ inputs.runner_choice == 'self-hosted' }}
-      run: |
-            RUNNER_ID=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
-              https://api.github.com/repos/${{ github.repository }}/actions/runners \
-              | jq '.runners[] | select(.name=="self-hosted") | .id')
-            curl -X DELETE \
-              -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
-              https://api.github.com/repos/${{ github.repository }}/actions/runners/$RUNNER_ID

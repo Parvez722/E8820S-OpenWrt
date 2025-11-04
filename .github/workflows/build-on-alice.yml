@@ -147,7 +147,10 @@ jobs:
 
                         umask 022
                         cd "$HOME/actions-runner"
-                        
+                        if pgrep -f "Runner.Listener run" >/dev/null 2>&1; then
+                          echo "🛑 Runner 已在运行，跳过启动。"
+                          exit 0
+                        fi
                         # 1) 下载最新版 actions/runner (linux-x64)
                         LATEST_URL=$(curl -s https://api.github.com/repos/actions/runner/releases/latest \
                           | jq -r '.assets[] | select(.name | test("actions-runner-linux-x64-.*\\.tar\\.gz$")) | .browser_download_url' \
@@ -163,13 +166,13 @@ jobs:
                           -H "Authorization: token ${GH_TOKEN:-${{ secrets.GH_TOKEN }}}" \
                           "https://api.github.com/repos/${{ github.repository }}/actions/runners/registration-token" \
                           | jq -r '.token')
-
+                        
                         # 3) 配置 runner
                         ./config.sh --url "https://github.com/${{ github.repository }}" \
                                     --token "$REG_TOKEN" \
                                     --unattended \
-                                    --labels self-hosted
-                        
+                                    --labels self-hosted \
+                                    --ephemeral
                         # 4) 后台启动
                         nohup ./run.sh >/dev/null 2>&1 &
                         echo "Runner 启动完毕，正在监听作业队列..."
