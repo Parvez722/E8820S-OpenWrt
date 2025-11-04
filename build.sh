@@ -55,7 +55,7 @@ sudo --preserve-env=JOBS,BASE_DIR,OPENWRT_BRANCH,REPO_URL,BUILD_USER \
   chmod a+x "${BASE_DIR}/script/diy-part1.sh" "${BASE_DIR}/script/diy-part2.sh" "${BASE_DIR}/script/update-xray.sh"
   "${BASE_DIR}/script/diy-part1.sh"
   "${BASE_DIR}/script/diy-part2.sh"
-  "${BASE_DIR}/script/update-xray.sh"
+  
   patch -p1 < "${BASE_DIR}/patch/0001-ZTE8820S.patch"
   patch -p2 < "${BASE_DIR}/patch/0002-ramips-add-support-for-mtk-eip93-crypto-engine.patch"
   
@@ -63,7 +63,8 @@ sudo --preserve-env=JOBS,BASE_DIR,OPENWRT_BRANCH,REPO_URL,BUILD_USER \
   ./scripts/feeds clean
   ./scripts/feeds update -a
   ./scripts/feeds install -a
-
+  "${BASE_DIR}/script/update-xray.sh"
+  
   # 3.4 配置与下载
   make defconfig
   make download -j"${JOBS}"
