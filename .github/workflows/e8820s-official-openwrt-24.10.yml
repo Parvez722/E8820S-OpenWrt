@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: 准备结束
+    - name: check out 
       uses: actions/checkout@main
 
     - name: Clean up previous failed workflow runs
@@ -68,14 +68,14 @@ jobs:
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
     
-    - name: 下载固件源码
+    - name: clone openwrt src
       working-directory: /workdir
       run: |
         df -hT $PWD
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         
-    - name: Cache dl
+    - name: load download cache
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/openwrt/dl
@@ -83,16 +83,17 @@ jobs:
         restore-keys: |
           dl-
           
-    - name: 加载Cache缓存
+    - name: load cache
       uses: klever1988/cachewrtbuild@main
       with:
         ccache: 'true'
         prefix: ${{ github.workspace }}/openwrt
-    - name: 应用patch
+    
+    - name: apply patch
       run: |
         cd /workdir/openwrt && patch -p0001 < $GITHUB_WORKSPACE/$PATCH1
       
-    - name: 加载feeds跟自定义插件
+    - name: load custom feeds
       run: |
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
         chmod +x $DIY_P1_SH
@@ -100,7 +101,7 @@ jobs:
         $GITHUB_WORKSPACE/$DIY_P1_SH
         chmod a+x $GITHUB_WORKSPACE/script/update-xray.sh
 
-    - name: 下载feeds跟安装自定义插件
+    - name: update feeds
       run: cd openwrt && ./scripts/feeds update -a
 
     - name: Install feeds
@@ -109,7 +110,10 @@ jobs:
     - name: Update xray Package
       run: cd openwrt && bash $GITHUB_WORKSPACE/script/update-xray.sh
       
-    - name: 加载.config设置
+    - name: Update golang
+      run: cd openwrt && bash $GITHUB_WORKSPACE/script/update-golang.sh
+      
+    - name: load config 
       run: |
         [ -e files ] && mv files openwrt/files
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
@@ -118,7 +122,7 @@ jobs:
         $GITHUB_WORKSPACE/$DIY_P2_SH
         sed -i 's/--set=llvm\.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/' feeds/packages/lang/rust/Makefile
     
-    - name: 下载软件包
+    - name: download packages
       id: package
       run: |
         cd openwrt
@@ -127,7 +131,7 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
         
-    - name: 开始编译固件
+    - name: compile
       id: compile
       run: |
         cd openwrt
@@ -138,7 +142,7 @@ jobs:
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
         
-    - name: 检查github储存空间情况
+    - name: check disk info
       if: (!cancelled())
       run: df -hT
 
