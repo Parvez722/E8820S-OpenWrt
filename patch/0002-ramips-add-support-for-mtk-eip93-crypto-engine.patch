@@ -51,3 +51,23 @@ index 153ff08421..2b9a1312af 100644
 
  define Target/Description
         Build firmware images for Ralink MT7621 based boards.
+diff --git a/target/linux/ramips/dts/mt7621.dtsi b/target/linux/ramips/dts/mt7621.dtsi
+index 3e076741a9..6cb0835a25 100644
+--- a/target/linux/ramips/dts/mt7621.dtsi
++++ b/target/linux/ramips/dts/mt7621.dtsi
+@@ -437,6 +437,15 @@
+ 		clock-names = "nfi_clk";
+ 	};
+ 
++        crypto: crypto@1e004000 {
++         status = "okay";
++         compatible = "mediatek,mtk-eip93";
++         reg = <0x1e004000 0x1000>;
++
++         interrupt-parent = <&gic>;
++         interrupts = <GIC_SHARED 19 IRQ_TYPE_LEVEL_HIGH>;
++        };
++
+ 	ethernet: ethernet@1e100000 {
+ 		compatible = "mediatek,mt7621-eth";
+ 		reg = <0x1e100000 0x10000>;
