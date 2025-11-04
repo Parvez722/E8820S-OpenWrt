@@ -5,126 +5,198 @@ on:
 permissions:
   contents: write
   actions: write
-  
+
 jobs:
-  build:
+  provision:
     runs-on: ubuntu-latest
+    env:
+      API_TOKEN: ${{ secrets.API_TOKEN }}
+      SSH_PRIVATE_KEY_ID: ${{ secrets.SSH_PRIVATE_KEY_ID }}
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up build variables
-      run: |
-        echo "BUILD_CMD=${{ secrets.BUILD_COMMAND }}" >> $GITHUB_ENV
-        echo "API_TOKEN=${{ secrets.API_TOKEN }}" >> $GITHUB_ENV
-        echo "SSH_PRIVATE_KEY_ID=${{ secrets.SSH_PRIVATE_KEY_ID }}" >> $GITHUB_ENV
-        printf '%b\n' "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
-        chmod 600 private_key.pem
+      - name: 设置 SSH 私钥
+        run: |
+          printf '%b\n' "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
 
-    - name: Check Instance Existence
-      id: check-instance
-      run: |
-        resp=$(curl 'https://app.alice.ws/cli/v1/Evo/Instance' \
-          -H "KP-APIToken: $API_TOKEN")
-        if echo "$resp" | jq -e '.data | length > 0' > /dev/null; then
-          echo "Instance already exists, skipping creation."
-          echo "should_publish=false" >> $GITHUB_OUTPUT
-          ip=$(echo $resp | jq -r .data.[0].ipv4)
-          id=$(echo $resp | jq -r .data.[0].id)
+      - name: 检查 AliceInit 实例是否存在
+        id: check-instance
+        run: |
+          resp=$(curl -s 'https://app.alice.ws/cli/v1/Evo/Instance' \
+            -H "Authorization: Bearer $API_TOKEN")
+          if echo "$resp" | jq -e '.data | length > 0' > /dev/null; then
+            echo "Instance already exists."
+            echo "should_create=false" >> "$GITHUB_OUTPUT"
+            ip=$(echo $resp | jq -r .data.[0].ipv4)
+            id=$(echo $resp | jq -r .data.[0].id)
+            echo "::add-mask::$ip"
+            echo "::add-mask::$id"
+            echo "ip=$ip" >> "$GITHUB_OUTPUT"
+            echo "id=$id" >> "$GITHUB_ENV"
+          else
+            echo "No existing instance. Need to create."
+            echo "should_create=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 创建 AliceInit 实例
+        id: provision
+        if: ${{ steps.check-instance.outputs.should_create == 'true' }}
+        run: |
+          resp=$(curl -s -X POST 'https://app.alice.ws/cli/v1/Evo/Deploy' \
+            -H "Authorization: Bearer $API_TOKEN" \
+            --form "product_id=${{ vars.OS_ID }}" \
+            --form "os_id=10" \
+            --form "time=4" \
+            --form "sshKey=$SSH_PRIVATE_KEY_ID")
+          data=$(echo "$resp" | jq -r .data)
+          ip=$(echo "$data" | jq -r .ipv4)
+          id=$(echo "$data" | jq -r .id)
           echo "::add-mask::$ip"
           echo "::add-mask::$id"
           echo "ip=$ip" >> "$GITHUB_OUTPUT"
           echo "id=$id" >> "$GITHUB_ENV"
-        else
-          echo "No existing instance found, proceeding with creation."
-          echo "should_publish=true" >> $GITHUB_OUTPUT
-        fi
 
-    - name: Create AliceInit instance
-      id: provision
-      if: ${{ steps.check-instance.outputs.should_publish == 'true' }}
-      run: |
-        resp=$(curl -X POST 'https://app.alice.ws/cli/v1/Evo/Deploy' \
-          -H "KP-APIToken: $API_TOKEN" \
-          --form "product_id=39" \
-          --form "os_id=10" \
-          --form "time=4" \
-          --form "sshKey=$SSH_PRIVATE_KEY_ID")
-        data=$(echo $resp| jq -r .data)
-        ip=$(echo $data | jq -r .ipv4)
-        id=$(echo $data | jq -r .id)
-        echo "::add-mask::$ip"
-        echo "::add-mask::$id"
-        echo "ip=$ip" >> "$GITHUB_OUTPUT"
-        echo "id=$id" >> "$GITHUB_ENV"
-        sleep 60s
-
-    - name: Get Instance IP
-      id: get_ip
-      run: |
-        
-        if [ -n "${{ steps.check-instance.outputs.ip }}" ]; then
-          ip="${{ steps.check-instance.outputs.ip }}"
-        else
-          ip="${{ steps.provision.outputs.ip }}"
-        fi
-        echo "ip=$ip" >> $GITHUB_OUTPUT
-
-    - name: Wait for instance to be ready
-      run: |
-        echo "Waiting for instance to respond"
-        if [ ! -d "alice-runner" ]; then
-            git clone "https://github.com/${{ github.repository }}"
-        fi
-        bash alice-runner/local_scripts/*.sh
-        ip=${{ steps.get_ip.outputs.ip }}
-        for i in {1..5}; do
-          if ssh -o BatchMode=yes \
-          -o ConnectTimeout=5 \
-          -o StrictHostKeyChecking=no \
-          -i private_key.pem \
-          root@$ip exit; then
-            echo "✅ Instance is ready!"
-            break
+      - name: 获取实例 IP
+        id: get_ip
+        run: |
+          if [ -n "${{ steps.check-instance.outputs.ip }}" ]; then
+            echo "ip=${{ steps.check-instance.outputs.ip }}" >> "$GITHUB_OUTPUT"
           else
-            echo "Waiting for instance... ($i/5)"
-            sleep 5
+            echo "ip=${{ steps.provision.outputs.ip }}" >> "$GITHUB_OUTPUT"
           fi
-        done
 
-    - name: Build on Remote
-      id: build
-      run: |
-        ip=${{ steps.get_ip.outputs.ip }}
-        ssh -o StrictHostKeyChecking=no -i private_key.pem root@$ip << 'EOF'
-          echo 127.0.0.1 $(hostname) >> /etc/hosts
-          apt update && apt install -y curl tar xz-utils git jq unzip snapd
-          [ ! -d "app" ] && git clone https://github.com/${{ vars.REPO }} app
-          if [ ! -d "alice-runner" ]; then
-          git clone "https://github.com/${{ github.repository }}"
-          fi
-          cd alice-runner && \
-          bash *.sh && \
-          cd ..
-          source ~/.profile
-          cd app && mkdir -p _output && ${{ secrets.BUILD_COMMAND }}
-          tar -czf build-output.tar.gz ./_output
-        EOF
-        echo "build_output=true" >> $GITHUB_OUTPUT
+      - name: 等待实例 SSH 就绪
+        id: register-runner
+        run: |
+          ip="${{ steps.get_ip.outputs.ip }}"
 
-    - name: Download build artifact
-      run: |
-        ip=${{ steps.get_ip.outputs.ip }}
-        scp -o StrictHostKeyChecking=no -i private_key.pem root@$ip:app/build-output.tar.gz .
+          # 等待 SSH 可用
+          echo "Waiting for SSH on $ip..."
+          
+          for i in {1..10}; do
+            if ssh -o BatchMode=yes \
+                   -o ConnectTimeout=5 \
+                   -o StrictHostKeyChecking=no \
+                   -i private_key.pem \
+                   root@"$ip" "echo ready" &> /dev/null; then
+              echo "✅ SSH ready"
+              break
+            else
+              echo "⏳ SSH not ready yet ($i/10)..."
+              sleep 5
+            fi
+          done
 
-#    - name: Delete AliceInit instance
-#      if: ${{ steps.build.outputs.build_output == 'true' }}
-#      run: |
-#        curl -X POST "https://app.alice.ws/cli/v1/Evo/Destroy" -H "KP-APIToken: $API_TOKEN" --form "id=$id"
+      - name: Build on Remote
+        id: build
+        run: |
+          echo "开始在远程实例上安装并注册 Runner..."
+          ip=${{ steps.get_ip.outputs.ip }}
+          ssh -o StrictHostKeyChecking=no -i private_key.pem root@"$ip" << "EOF"
+                      echo $REG_TOKEN
+                      # --- 可选：自定义用户与目录 ---
+                      RUNNER_USER="${RUNNER_USER:-ghrunner}"
+                      RUNNER_DIR="/home/${RUNNER_USER}/actions-runner"
+                      
+                      if [[ $EUID -ne 0 ]]; then
+                        echo "请用 root 或 sudo 运行此脚本" >&2
+                        exit 1
+                      fi
+                      
+                      # --- 安装依赖 ---
+                      if command -v apt-get >/dev/null 2>&1; then
+                        apt-get update -y
+                        DEBIAN_FRONTEND=noninteractive apt-get install -y sudo curl jq wget tar
+                      elif command -v dnf >/dev/null 2>&1; then
+                        dnf install -y sudo curl jq wget tar
+                      elif command -v yum >/dev/null 2>&1; then
+                        yum install -y sudo curl jq wget tar
+                      else
+                        echo "未识别的发行版，请预先安装：sudo curl jq wget tar" >&2
+                        exit 1
+                      fi
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      if: ${{ steps.build.outputs.build_output == 'true' }}
-      with:
-        name: build-output.tar.gz
-        path: build-output.tar.gz
+                      if ! id -u "$RUNNER_USER" >/dev/null 2>&1; then
+                        useradd -m -s /bin/bash "$RUNNER_USER"
+                      fi
+                    
+                      # --- 准备 Runner 目录 ---
+                      install -d -o "$RUNNER_USER" -g "$RUNNER_USER" -m 755 "$RUNNER_DIR"
+
+                      TMP=$(mktemp)
+                      printf '%s\n' \
+                        "Cmnd_Alias APTCMDS = /usr/bin/apt, /usr/bin/apt-get, /usr/bin/dpkg, /usr/bin/systemctl, /usr/bin/tee, /usr/bin/timedatectl" \
+                        "$RUNNER_USER ALL=(ALL:ALL) NOPASSWD: APTCMDS" \
+                        "Defaults:$RUNNER_USER env_keep += \"DEBIAN_FRONTEND TZ\"" \
+                      | sudo tee "$TMP" >/dev/null
+                      
+                      # 校验语法后再安装
+                      if visudo -cf "$TMP" >/dev/null; then
+                        install -m 440 "$TMP" "/etc/sudoers.d/90-$RUNNER_USER-apt"
+                        rm -f "$TMP"
+                      else
+                        echo "sudoers 语法检查失败，未安装规则" >&2
+                        rm -f "$TMP"; exit 1
+                      fi
+                      # --- 以非 root 用户执行你的 Runner 安装/注册/启动片段 ---
+                      # 说明：这里改用更稳的 jq 过滤拿到 linux-x64 的 tar.gz 下载地址
+                      sudo -iu "$RUNNER_USER" bash <<'EOF'
+
+                        umask 022
+                        cd "$HOME/actions-runner"
+                        
+                        # 1) 下载最新版 actions/runner (linux-x64)
+                        LATEST_URL=$(curl -s https://api.github.com/repos/actions/runner/releases/latest \
+                          | jq -r '.assets[] | select(.name | test("actions-runner-linux-x64-.*\\.tar\\.gz$")) | .browser_download_url' \
+                          | head -n 1)
+                        wget -q "$LATEST_URL"
+                        TAR_NAME=$(basename "$LATEST_URL")
+                        tar xzf "$TAR_NAME"
+                        rm -f "$TAR_NAME"
+                        
+                        # 2) 申请注册 token（优先用环境变量，若无则使用已在 Actions 中展开的上下文）
+                        REG_TOKEN=$(curl -fsSL -X POST \
+                          -H "Accept: application/json" \
+                          -H "Authorization: token ${GH_TOKEN:-${{ secrets.GH_TOKEN }}}" \
+                          "https://api.github.com/repos/${{ github.repository }}/actions/runners/registration-token" \
+                          | jq -r '.token')
+
+                        # 3) 配置 runner
+                        ./config.sh --url "https://github.com/${{ github.repository }}" \
+                                    --token "$REG_TOKEN" \
+                                    --unattended \
+                                    --labels self-hosted
+                        
+                        # 4) 后台启动
+                        nohup ./run.sh >/dev/null 2>&1 &
+                        echo "Runner 启动完毕，正在监听作业队列..."
+                      EOF
+                      
+                      echo "✅ 已创建用户 ${RUNNER_USER}（具备 sudo 权限），并以其身份安装并启动 Runner。"
+
+                      exit
+          EOF
+
+      - name: 通知后续：触发 “在 Self-hosted 上执行 Build” 工作流
+        env:
+          WORKFLOW_FILE: "e8820s-official-openwrt-23.05.yml"
+        run: |
+          echo "触发 build-on-selfhosted.yml"
+          branch="main"
+          curl -s -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/$WORKFLOW_FILE/dispatches \
+            -d '{
+                  "ref":"main",
+                  "inputs":{
+                   "runner_choice":"self-hosted"
+                  }
+                }'
+
+      - name: 输出信息
+        run: |
+          echo "✔️ 已经在远程实例上注册 Runner 并触发第二阶段工作流。"

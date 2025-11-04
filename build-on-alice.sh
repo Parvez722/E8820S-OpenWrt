@@ -1,32 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ========= 0) 基础设置 =========
 JOBS="$(nproc)"
-OPENWRT_BRANCH="openwrt-23.05"
+OPENWRT_BRANCH="openwrt-24.10"
 REPO_URL="https://github.com/openwrt/openwrt"
 BUILD_USER="builder"
 
 export JOBS BASE_DIR OPENWRT_BRANCH REPO_URL BUILD_USER
 
-# ========= 1) 安装依赖 =========
 sudo apt update
 sudo apt install -y build-essential clang flex bison g++ gawk \
   gcc-multilib g++-multilib gettext git libncurses5-dev libssl-dev \
   python3-setuptools rsync swig unzip zlib1g-dev file wget screen -y
 
-# ========= 2) 确保存在 builder 用户 =========
 if ! id -u "${BUILD_USER}" >/dev/null 2>&1; then
   sudo useradd -m "${BUILD_USER}"
   echo "=== 已创建用户 ${BUILD_USER}（未授予 sudo）。如需 sudo 自行添加到组 ==="
 fi
 
-# ========= 3) 用 screen 包住，并把日志写到 /var/log/screen.log =========
 sudo mkdir -p /var/log
 sudo touch /var/log/screen.log
 sudo chown "$(id -u)":"$(id -g)" /var/log/screen.log   # 确保当前用户可写日志
-
-screen -dmS openwrt_build -L -Logfile /var/log/screen.log \
 sudo --preserve-env=JOBS,BASE_DIR,OPENWRT_BRANCH,REPO_URL,BUILD_USER \
   -u "${BUILD_USER}" -H bash -lc '
   set -euo pipefail
@@ -69,8 +63,5 @@ sudo --preserve-env=JOBS,BASE_DIR,OPENWRT_BRANCH,REPO_URL,BUILD_USER \
   make download -j"${JOBS}"
   find dl -size -1024c -exec ls -l {} \;
   find dl -size -1024c -exec rm -f {} \;
-  make -j"${JOBS}" || make -j1 V=s
+  make -j"${JOBS}" || make -j1 V=sc
 '
-
-echo "=== 全部步骤已启动（screen 会话：openwrt_build，日志：/var/log/screen.log）==="
-echo "查看日志：tail -f /var/log/screen.log"
