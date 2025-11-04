@@ -77,6 +77,7 @@ jobs:
     - name: clone openwrt src
       run: |
         df -hT $PWD
+        [ -d openwrt ] && rm -rf openwrt
         git clone $REPO_URL -b $REPO_BRANCH openwrt
 
         
