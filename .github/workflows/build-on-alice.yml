@@ -13,7 +13,9 @@ jobs:
       API_TOKEN: ${{ secrets.API_TOKEN }}
       SSH_PRIVATE_KEY_ID: ${{ secrets.SSH_PRIVATE_KEY_ID }}
       WORKFLOW_FILE: ${{ vars.WORKFLOW }} # workflows文件全名(如xxx.yml)或者workflow的name
-
+      PRODUCT_ID: ${{ vars.PRODUCT_ID || 38 }}
+      INSTANCE_DURATION: ${{ vars.INSTRANCE_DURATION || 2 }}
+      OS_ID: ${{ vars.OS_ID || 10 }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -48,9 +50,9 @@ jobs:
         run: |
           resp=$(curl -s -X POST 'https://app.alice.ws/cli/v1/Evo/Deploy' \
             -H "Authorization: Bearer $API_TOKEN" \
-            --form "product_id=${{ vars.PRODUCT_ID }}" \
-            --form "os_id=10" \
-            --form "time=4" \
+            --form "product_id=$PRODUCT_ID" \
+            --form "os_id=$OS_ID" \
+            --form "time=$INSTANCE_DURATION" \
             --form "sshKey=$SSH_PRIVATE_KEY_ID")
           data=$(echo "$resp" | jq -r .data)
           ip=$(echo "$data" | jq -r .ipv4)
@@ -59,6 +61,7 @@ jobs:
           echo "::add-mask::$id"
           echo "ip=$ip" >> "$GITHUB_OUTPUT"
           echo "id=$id" >> "$GITHUB_ENV"
+          sleep 60s
 
       - name: 获取实例 IP
         id: get_ip
@@ -97,6 +100,10 @@ jobs:
           echo "开始在远程实例上安装并注册 Runner..."
           ip=${{ steps.get_ip.outputs.ip }}
           ssh -o StrictHostKeyChecking=no -i private_key.pem root@"$ip" << "EOF"
+                      if pgrep -f "Runner.Listener run" >/dev/null 2>&1; then
+                        echo "🛑 Runner 已在运行，跳过启动。"
+                        exit 0
+                      fi
                       echo $REG_TOKEN
                       # --- 可选：自定义用户与目录 ---
                       RUNNER_USER="${RUNNER_USER:-ghrunner}"
@@ -148,10 +155,6 @@ jobs:
 
                         umask 022
                         cd "$HOME/actions-runner"
-                        if pgrep -f "Runner.Listener run" >/dev/null 2>&1; then
-                          echo "🛑 Runner 已在运行，跳过启动。"
-                          exit 0
-                        fi
                         # 1) 下载最新版 actions/runner (linux-x64)
                         LATEST_URL=$(curl -s https://api.github.com/repos/actions/runner/releases/latest \
                           | jq -r '.assets[] | select(.name | test("actions-runner-linux-x64-.*\\.tar\\.gz$")) | .browser_download_url' \
