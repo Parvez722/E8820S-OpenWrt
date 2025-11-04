@@ -6,7 +6,11 @@ name: E8820S 官方源码 openwrt-24.10
 
 on: 
   workflow_dispatch:
-
+    inputs:
+      runner_choice:
+        type: choice
+        options: [self-hosted, ubuntu-24.04]
+        default: ubuntu-24.04
 env:
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: openwrt-24.10

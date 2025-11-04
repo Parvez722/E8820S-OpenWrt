@@ -12,7 +12,7 @@ jobs:
     env:
       API_TOKEN: ${{ secrets.API_TOKEN }}
       SSH_PRIVATE_KEY_ID: ${{ secrets.SSH_PRIVATE_KEY_ID }}
-
+      WORKFLOW_FILE: ${{ vars.WORKFLOW }} # workflows文件全名(如xxx.yml)或者workflow的name
 
     steps:
       - name: Checkout repository
@@ -185,8 +185,6 @@ jobs:
           EOF
 
       - name: 通知后续：触发 “在 Self-hosted 上执行 Build” 工作流
-        env:
-          WORKFLOW_FILE: ${{ vars.WORKFLOW }}
         run: |
           echo "触发 build-on-selfhosted.yml"
           branch="main"
