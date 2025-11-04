@@ -74,7 +74,15 @@ jobs:
         df -hT $PWD
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-      
+        
+    - name: Cache dl
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/openwrt/dl
+        key: dl-${{ hashFiles('openwrt/feeds.conf*', 'openwrt/.config') }}
+        restore-keys: |
+          dl-
+          
     - name: 加载Cache缓存
       uses: klever1988/cachewrtbuild@main
       with:
@@ -99,7 +107,7 @@ jobs:
       run: cd openwrt && ./scripts/feeds install -a
       
     - name: Update xray Package
-      run: $GITHUB_WORKSPACE/script/update-xray.sh
+      run: cd openwrt && bash $GITHUB_WORKSPACE/script/update-xray.sh
       
     - name: 加载.config设置
       run: |
