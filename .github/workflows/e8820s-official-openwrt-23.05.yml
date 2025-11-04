@@ -170,8 +170,6 @@ jobs:
 
     - name: Destory alice
       if: ${{ inputs.runner_choice == 'self-hosted' }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
             RUNNER_ID=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
               https://api.github.com/repos/${{ github.repository }}/actions/runners \
