@@ -14,7 +14,6 @@
 - eip93 (硬件加速）
 - kmod-cryptodev (Cryptographic Hardware Accelerators in user level)
 - kmod-crypto-* (frequenctly used crypto kmod)
-- openssh-sftp-server
 
 ## 跑分（单位为MiB/s)
 
