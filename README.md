@@ -7,6 +7,11 @@ mt7621全系版本有奇怪的重启bug，请见[#issues/19164](https://github.c
 
 写了两个版本的编译，可以release翻一下自取
 
+## 自行编译
+若你不想使用我预先编译的包，可以clone此仓库，使用github action的runner编译
+
+或者直接运行仓库下的build.sh脚本即可
+
 ## 固件软件包
 配置为
 - zerotier
