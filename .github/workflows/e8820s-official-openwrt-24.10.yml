@@ -119,23 +119,20 @@ jobs:
         key: dl-${{ runner.os }}-${{ hashFiles('openwrt/feeds.conf*', 'openwrt/.config') }}
         restore-keys: |
           dl-${{ runner.os }}-
-      
-    # 2) 运行下载
+
     - name: make download
       id: download
       run: |
         cd openwrt
         make download
-      
-      # 2.1 可选：保存前做一次健康检查，防止 *.broken / *.failed 混入
+
     - name: Check dl health
       run: |
         set -e
         if find "$GITHUB_WORKSPACE/openwrt/dl" -type f \( -name '*.broken' -o -name '*.failed' \) | grep -q .; then
           echo "Broken downloads found in dl/. Refusing to cache."; exit 1
         fi
-      
-    # 3) 仅当下载成功 且 本次不是 cache-hit 时才保存
+
     - name: Save dl cache
       if: ${{ success() && steps.dlcache.outputs.cache-hit != 'true' }}
       uses: actions/cache/save@v4
