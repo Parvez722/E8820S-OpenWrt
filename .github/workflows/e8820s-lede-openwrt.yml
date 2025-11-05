@@ -159,6 +159,6 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: steps.compile.outputs.status == 'success' && !cancelled()
       with:
-        tag_name: OpenWrt-23.05-${{ github.run_number }}
+        tag_name: Openwrt-E8820S-lede--${{ github.run_number }}
         body_path: release.txt
         files: openwrt/openwrt-E8820S-lede-${{ env.FILE_DATE }}-${{ github.run_number }}.tar.gz
