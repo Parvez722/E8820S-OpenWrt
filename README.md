@@ -36,7 +36,15 @@
 若跑专线，建议使用纯ChaCha20或者vless-encryption，否则用reality
 
 ## 预览
+以下为均为只开zerotier+passwall分流的情况
+
+### 23.05版本
+
+占用20M是因为我更新了xray版本
+
 <img width="1444" height="877" alt="image" src="https://github.com/user-attachments/assets/7a80c0c8-303b-49cf-a001-952f426b76ee" />
 
-<img width="840" height="168" alt="image" src="https://github.com/user-attachments/assets/8d624274-b7c6-4192-b1ee-3c1ccd6f145d" />
+### 24.10版本
+<img width="1375" height="887" alt="image" src="https://github.com/user-attachments/assets/d9ace000-de79-4be8-bfc4-9bdbe955e5c8" />
+
 
