@@ -61,7 +61,7 @@ jobs:
           echo "::add-mask::$id"
           echo "ip=$ip" >> "$GITHUB_OUTPUT"
           echo "id=$id" >> "$GITHUB_ENV"
-          sleep 60s
+          sleep 120s
 
       - name: 获取实例 IP
         id: get_ip
