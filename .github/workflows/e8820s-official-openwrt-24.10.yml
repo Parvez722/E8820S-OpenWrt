@@ -18,11 +18,6 @@ env:
   CONFIG_FILE: config/e8820s-official-openwrt.config
   DIY_P1_SH: script/diy-part1.sh
   DIY_P2_SH: script/diy-part2.sh
-  UPLOAD_BIN_DIR: true
-  UPLOAD_FIRMWARE: true
-  UPLOAD_COWTRANSFER: true
-  UPLOAD_WETRANSFER: true
-  UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
   PATCH1: patch/0001-ZTE8820S.patch
 

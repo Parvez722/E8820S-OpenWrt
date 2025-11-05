@@ -61,7 +61,6 @@ jobs:
           echo "::add-mask::$id"
           echo "ip=$ip" >> "$GITHUB_OUTPUT"
           echo "id=$id" >> "$GITHUB_ENV"
-          sleep 120s
 
       - name: 获取实例 IP
         id: get_ip
@@ -192,6 +191,7 @@ jobs:
           echo "触发 build-on-selfhosted.yml"
           branch="main"
           $GITHUB_WORKSPACE/.github/$WORKFLOW_FILE
+          sleep 300s
           curl -s -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
@@ -200,7 +200,7 @@ jobs:
                   "ref":"main",
                   "inputs":{
                    "runner_choice":"self-hosted"
-                  }
+                  },
                 }'
 
       - name: 输出信息
