@@ -15,7 +15,7 @@ env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: config/e8820s-official-openwrt.config
+  CONFIG_FILE: config/e8820s-lede-openwrt.config
   DIY_P1_SH: script/diy-part1.sh
   DIY_P2_SH: script/diy-part2.sh
   TZ: Asia/Shanghai
@@ -145,14 +145,14 @@ jobs:
       id: organize
       run: |
         cd openwrt
-        tar zcf openwrt-E8820S-official-24.10-${{ env.FILE_DATE }}-${{ github.run_number }}.tar.gz bin
+        tar zcf openwrt-E8820S-lede-${{ env.FILE_DATE }}-${{ github.run_number }}.tar.gz bin
         echo "FIRMWARE=$PWD/bin" >> $GITHUB_ENV
 
     - name: Upload firmware + ipk repos
       uses: actions/upload-artifact@v4
       if: steps.compile.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt-E8820S-official-23.05
+        name: OpenWrt-E8820S-lede
         path: ${{ env.FIRMWARE }}
 
     - name: Publish firmware *.bin to Release
@@ -161,4 +161,4 @@ jobs:
       with:
         tag_name: OpenWrt-23.05-${{ github.run_number }}
         body_path: release.txt
-        files: openwrt/openwrt-E8820S-official-24.10-${{ env.FILE_DATE }}-${{ github.run_number }}.tar.gz
+        files: openwrt/openwrt-E8820S-lede-${{ env.FILE_DATE }}-${{ github.run_number }}.tar.gz
