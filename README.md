@@ -1,13 +1,11 @@
 ## 描述
-这是一个中兴ZTE-E8820S自用精简固件仓库，官方源码采用23.05或24.10版本，内存布局是hc5962/B70，**请确认你的内存布局再刷，不要下载下来就往里面刷**
+这是一个中兴ZTE-E8820S自用精简固件仓库，源码采用24.10版本或lede，内存布局是hc5962/B70，**请确认你的内存布局再刷，不要下载下来就往里面刷**
 
-**官方源无硬件nat支持，只能软件跑600Mbps ~ 700Mbps**，若你不是千兆则不需要考虑这个，如果你真的需要使用，请改用[lede](https://github.com/coolsnowwolf/lede)
+**官方源无硬件nat支持，只能软件跑600Mbps ~ 700Mbps**，若你不是千兆则不需要考虑这个，如果你真的需要使用，请改用[lede](https://github.com/coolsnowwolf/lede), release里有两个版本，自取选用
 
 mt7621全系版本有奇怪的重启bug，请见[#issues/19164](https://github.com/openwrt/openwrt/issues/19164)
 
 **但openwrt-23.05甚至老毛子或者immortalwrt，我也遇到过很多次断电后重启以后丢wifi的情况，感觉是openwrt固件写的有问题**
-
-写了两个版本的编译，可以release翻一下自取
 
 ## 自行编译
 若你不想使用我预先编译的包，可以clone此仓库，使用github action的runner编译
