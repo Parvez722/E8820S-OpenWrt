@@ -1,4 +1,4 @@
-name: E8820S 官方源码 openwrt-23.05
+name: E8820S lede openwrt
 permissions:
   contents: write
   actions: write
