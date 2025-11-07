@@ -136,29 +136,42 @@ jobs:
         cd openwrt
         echo -e "$(nproc) thread compile"
         make -j$(nproc)  || make V=sc -j1
-        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
-        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
-        echo "FILE_DATE=_$(date -I)" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
+        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
 
     - name: Organize files
       id: organize
       run: |
         cd openwrt
-        tar zcf openwrt-E8820S-lede-${{ env.FILE_DATE }}-${{ github.run_number }}.tar.gz bin/targets/*/*/*.bin
-        echo "FIRMWARE=$PWD/bin" >> $GITHUB_ENV
+        tar zcf ../openwrt-E8820S-lede-open-source-${{ env.FILE_DATE }}-${{ github.run_number }}.tar.gz bin
 
-    - name: Upload firmware + ipk repos
-      uses: actions/upload-artifact@v4
-      if: steps.compile.outputs.status == 'success' && !cancelled()
-      with:
-        name: OpenWrt-E8820S-lede
-        path: ${{ env.FIRMWARE }}
+    - name: Build Close source wifi firmware
+      id: compile2
+      run: |
+        cd openwrt
+        mv .config.old .config
+        sed -i "s/CONFIG_PACKAGE_kmod-mt76x2e=n/CONFIG_PACKAGE_kmod-mt76x2e=y/g" .config
+        sed -i "s/CONFIG_PACKAGE_kmod-mt7603e=n/CONFIG_PACKAGE_kmod-mt7603e=y/g" .config
+        sed -i "s/CONFIG_PACKAGE_kmod-mt76x2=y/CONFIG_PACKAGE_kmod-mt76x2=n/g" .config
+        sed -i "s/CONFIG_PACKAGE_kmod-mt7603=y/CONFIG_PACKAGE_kmod-mt7603=n/g" .config
+        sed -i "s/CONFIG_PACKAGE_kmod-mt76x2-common=y/CONFIG_PACKAGE_kmod-mt76x2-common=n/g" .config
+        make clean
+        make -j$(nproc) || make V=sc -j1
+        echo "status=success" >> $GITHUB_OUTPUT
+        echo "FILE_DATE_CLOSE_SOURCE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+
+    - name: Organize files
+      id: organize2
+      run: |
+        cd openwrt
+        tar zcf ../openwrt-E8820S-lede-close-source-${{ env.FILE_DATE_CLOSE_SOURCE }}-${{ github.run_number }}.tar.gz bin
 
     - name: Publish firmware *.bin to Release
       uses: softprops/action-gh-release@v2
-      if: steps.compile.outputs.status == 'success' && !cancelled()
+      if: steps.compile.outputs.status == 'success' && steps.compile2.outputs.status == 'success' && !cancelled()
       with:
-        tag_name: Openwrt-E8820S-lede--${{ github.run_number }}
+        tag_name: openwrt-E8820S-lede-${{ env.FILE_DATE }}-${{ github.run_number }}
         body_path: release.txt
-        files: 
-          openwrt/openwrt-E8820S-lede-${{ env.FILE_DATE }}-${{ github.run_number }}.tar.gz
+        files:
+          openwrt-E8820S-lede-open-source-${{ env.FILE_DATE }}-${{ github.run_number }}.tar.gz
+          openwrt-E8820S-lede-close-source-${{ env.FILE_DATE_CLOSE_SOURCE }}-${{ github.run_number }}.tar.gz
