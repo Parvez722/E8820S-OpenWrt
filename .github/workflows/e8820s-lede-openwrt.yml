@@ -150,11 +150,11 @@ jobs:
       run: |
         cd openwrt
         mv .config.old .config
-        sed -i "s/CONFIG_PACKAGE_kmod-mt76x2e=n/CONFIG_PACKAGE_kmod-mt76x2e=y/g" .config
-        sed -i "s/CONFIG_PACKAGE_kmod-mt7603e=n/CONFIG_PACKAGE_kmod-mt7603e=y/g" .config
-        sed -i "s/CONFIG_PACKAGE_kmod-mt76x2=y/CONFIG_PACKAGE_kmod-mt76x2=n/g" .config
-        sed -i "s/CONFIG_PACKAGE_kmod-mt7603=y/CONFIG_PACKAGE_kmod-mt7603=n/g" .config
-        sed -i "s/CONFIG_PACKAGE_kmod-mt76x2-common=y/CONFIG_PACKAGE_kmod-mt76x2-common=n/g" .config
+        sed -i "s/CONFIG_PACKAGE_kmod-mt76x2e=n//g" .config
+        sed -i "s/CONFIG_PACKAGE_kmod-mt7603e=n//g" .config
+        sed -i "s/CONFIG_PACKAGE_kmod-mt76x2=y//g" .config
+        sed -i "s/CONFIG_PACKAGE_kmod-mt7603=y//g" .config
+        sed -i "s/CONFIG_PACKAGE_kmod-mt76x2-common=y//g" .config
         make defconfig
         make clean
         make -j$(nproc) || make V=sc -j1
