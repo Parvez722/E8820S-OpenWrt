@@ -173,6 +173,6 @@ jobs:
       with:
         tag_name: openwrt-E8820S-lede-${{ env.FILE_DATE }}-${{ github.run_number }}
         body_path: release.txt
-        files:
-          ./openwrt-E8820S-lede-open-source-${{ env.FILE_DATE }}-${{ github.run_number }}.tar.gz
-          ./openwrt-E8820S-lede-close-source-${{ env.FILE_DATE_CLOSE_SOURCE }}-${{ github.run_number }}.tar.gz
+        files: |
+          openwrt-E8820S-lede-open-source-${{ env.FILE_DATE }}-${{ github.run_number }}.tar.gz
+          openwrt-E8820S-lede-close-source-${{ env.FILE_DATE_CLOSE_SOURCE }}-${{ github.run_number }}.tar.gz
