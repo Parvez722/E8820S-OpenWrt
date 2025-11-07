@@ -156,6 +156,7 @@ jobs:
         sed -i "s/CONFIG_PACKAGE_kmod-mt7603=y/CONFIG_PACKAGE_kmod-mt7603=n/g" .config
         sed -i "s/CONFIG_PACKAGE_kmod-mt76x2-common=y/CONFIG_PACKAGE_kmod-mt76x2-common=n/g" .config
         make clean
+        make defconfig
         make -j$(nproc) || make V=sc -j1
         echo "status=success" >> $GITHUB_OUTPUT
         echo "FILE_DATE_CLOSE_SOURCE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
