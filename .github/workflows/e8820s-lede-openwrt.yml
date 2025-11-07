@@ -146,7 +146,7 @@ jobs:
         tar zcf ../openwrt-E8820S-lede-${{ env.FILE_DATE }}-${{ github.run_number }}.tar.gz bin
     - name: Publish firmware *.bin to Release
       uses: softprops/action-gh-release@v2
-      if: steps.compile.outputs.status == 'success' && steps.compile2.outputs.status == 'success' && !cancelled()
+      if: steps.compile.outputs.status == 'success' && !cancelled()
       with:
         tag_name: openwrt-E8820S-lede-${{ env.FILE_DATE }}-${{ github.run_number }}
         files: |
