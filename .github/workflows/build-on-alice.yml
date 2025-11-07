@@ -199,7 +199,7 @@ jobs:
                   "ref":"main",
                   "inputs":{
                    "runner_choice":"self-hosted"
-                  },
+                  }
                 }'
 
       - name: 输出信息
