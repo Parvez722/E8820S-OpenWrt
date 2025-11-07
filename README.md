@@ -37,7 +37,7 @@ mt7621全系版本有奇怪的重启bug，请见[#issues/19164](https://github.c
 |               8192 |    28.53 | 72.90 |             19.77 |       12.32 |       46.03 |
 |              16384 |    28.58 | 75.44 |             19.83 |       12.34 |       54.14 |
 
-由于mt7621只有ctr的加速，会回落chacha20-poly, 若使用reality等tls类协议，单线程理论上限就是19.83MiB/s上下浮动
+由于mt7621只有ctr的加速，会回落chacha20-poly, 若使用reality等tls类协议，单线程理论上限就是19.83mbps上下浮动
 
 若跑专线，建议使用纯ChaCha20或者vless-encryption，否则用reality
 
