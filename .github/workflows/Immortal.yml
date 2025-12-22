@@ -12,7 +12,7 @@ on:
         default: ubuntu-24.04
 env:
   REPO_URL: https://github.com/Parvez722/immortalwrt
-  REPO_BRANCH: master
+  REPO_BRANCH: openwrt-24.10
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: config/e8820s-official-openwrt.config
   DIY_P1_SH: script/diy-part1.sh
@@ -39,18 +39,6 @@ jobs:
           keep_minimum_runs: 0      
           delete_run_by_conclusion_pattern: "failure,cancelled,skipped,timed_out"
 
-    - name: Maximize build space
-      uses: AdityaGarg8/remove-unwanted-software@v5
-      if: ${{ inputs.runner_choice != 'self-hosted' }}
-      with:
-         remove-android: 'true'         # ~9 GB
-         remove-dotnet: 'true'          # ~2 GB
-         remove-haskell: 'true'         # ~5.2 GB
-         remove-codeql: 'true'          # ~5.4 GB
-         remove-docker-images: 'true'   # ~3.2 GB
-         remove-large-packages: 'true'  # ~3.1 GB
-         # remove-cached-tools: 'true'    # ~8.3 GB
-         remove-swapfile: 'true'        # ~4 GB 
 
     - name: Initialization environment
       env:
