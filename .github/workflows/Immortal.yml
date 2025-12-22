@@ -12,7 +12,7 @@ on:
         default: ubuntu-24.04
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
-  REPO_BRANCH: openwrt-24.10
+  REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: config/e8820s-official-openwrt.config
   DIY_P1_SH: script/diy-part1.sh
