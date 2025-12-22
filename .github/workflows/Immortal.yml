@@ -11,7 +11,7 @@ on:
         options: [self-hosted, ubuntu-24.04]
         default: ubuntu-24.04
 env:
-  REPO_URL: https://github.com/immortalwrt/immortalwrt
+  REPO_URL: https://github.com/Parvez722/immortalwrt
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: config/e8820s-official-openwrt.config
