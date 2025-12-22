@@ -1,0 +1,164 @@
+permissions:
+  contents: write
+  actions: write
+name: E8820S 官方源码 openwrt-24.10
+
+on: 
+  workflow_dispatch:
+    inputs:
+      runner_choice:
+        type: choice
+        options: [self-hosted, ubuntu-24.04]
+        default: ubuntu-24.04
+env:
+  REPO_URL: https://github.com/immortalwrt/immortalwrt
+  REPO_BRANCH: openwrt-24.10
+  FEEDS_CONF: feeds.conf.default
+  CONFIG_FILE: config/e8820s-official-openwrt.config
+  DIY_P1_SH: script/diy-part1.sh
+  DIY_P2_SH: script/diy-part2.sh
+  TZ: Asia/Shanghai
+  PATCH1: patch/0001-ZTE8820S.patch
+
+jobs:
+  build:
+    name: 编译E8820S 官方源码 openwrt-24.10
+    runs-on: ${{ inputs.runner_choice == 'self-hosted'
+                 && 'self-hosted'
+                 || inputs.runner_choice }}
+    steps:
+    - name: check out 
+      uses: actions/checkout@main
+
+    - name: Clean up previous failed workflow runs
+      uses: mattraks/delete-workflow-runs@v2
+      with: 
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 0 
+          keep_minimum_runs: 0      
+          delete_run_by_conclusion_pattern: "failure,cancelled,skipped,timed_out"
+
+    - name: Maximize build space
+      uses: AdityaGarg8/remove-unwanted-software@v5
+      if: ${{ inputs.runner_choice != 'self-hosted' }}
+      with:
+         remove-android: 'true'         # ~9 GB
+         remove-dotnet: 'true'          # ~2 GB
+         remove-haskell: 'true'         # ~5.2 GB
+         remove-codeql: 'true'          # ~5.4 GB
+         remove-docker-images: 'true'   # ~3.2 GB
+         remove-large-packages: 'true'  # ~3.1 GB
+         # remove-cached-tools: 'true'    # ~8.3 GB
+         remove-swapfile: 'true'        # ~4 GB 
+
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        export TZ="${TZ:-UTC}"
+        sudo apt-get -y -qq update
+        sudo apt -y update
+        sudo apt -y install build-essential clang flex bison g++ gawk \
+        gcc-multilib g++-multilib gettext git libncurses5-dev libssl-dev \
+        python3-setuptools rsync swig unzip zlib1g-dev file wget
+        sudo apt-get -y -qq autoremove --purge
+        sudo apt-get -y -qq clean
+        sudo timedatectl set-timezone "$TZ"
+
+    
+    - name: clone openwrt src
+      run: |
+        df -hT $PWD
+        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        
+    - name: load cache
+      uses: klever1988/cachewrtbuild@main
+      with:
+        ccache: 'true'
+        prefix: ${{ github.workspace }}/openwrt
+    
+    - name: apply patch
+      run: |
+        cd openwrt && patch -p0001 < $GITHUB_WORKSPACE/$PATCH1
+      
+    - name: update feeds
+      run: cd openwrt && ./scripts/feeds update -a
+
+    - name: Install feeds
+      run: cd openwrt && ./scripts/feeds install -a
+
+    - name: load config 
+      run: |
+        [ -e files ] && mv files openwrt/files
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        chmod +x $DIY_P2_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P2_SH
+        sed -i 's/--set=llvm\.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/' feeds/packages/lang/rust/Makefile
+        make defconfig
+
+    - name: Restore dl cache
+      id: dlcache
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ github.workspace }}/openwrt/dl
+        key: dl-${{ runner.os }}-${{ hashFiles('openwrt/feeds.conf*', 'openwrt/.config') }}
+        restore-keys: |
+          dl-${{ runner.os }}-
+
+    - name: make download
+      id: download
+      run: |
+        cd openwrt
+        make download
+
+    - name: Check dl health
+      run: |
+        set -e
+        if find "$GITHUB_WORKSPACE/openwrt/dl" -type f \( -name '*.broken' -o -name '*.failed' \) | grep -q .; then
+          echo "Broken downloads found in dl/. Refusing to cache."; exit 1
+        fi
+
+    - name: Save dl cache
+      if: ${{ success() && steps.dlcache.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ github.workspace }}/openwrt/dl
+        key: dl-${{ runner.os }}-${{ hashFiles('openwrt/feeds.conf*', 'openwrt/.config') }}
+
+    - name: compile
+      id: compile
+      run: |
+        cd openwrt
+        echo -e "$(nproc) thread compile"
+        make -j$(nproc) || make V=sc -j1
+        echo "status=success" >> $GITHUB_OUTPUT
+        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
+        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
+        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+      
+    - name: Organize files
+      id: organize
+      run: |
+        cd openwrt
+        tar zcf openwrt-E8820S-official-24.10-${{ github.run_number }}.tar.gz bin
+        echo "FIRMWARE=$PWD/bin" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
+        
+    - name: Upload firmware + ipk repos
+      uses: actions/upload-artifact@v4
+      if: steps.compile.outputs.status == 'success' && !cancelled()
+      with:
+        name: OpenWrt-E8820S-official-24.10-${{ github.run_number }}
+        path: ${{ env.FIRMWARE }}
+    
+    - name: Publish firmware *.bin to Release
+      uses: softprops/action-gh-release@v2
+      if: steps.compile.outputs.status == 'success' && !cancelled()
+      with:
+        tag_name: OpenWrt-24.10-${{ github.run_number }}
+        body_path: release.txt
+        files: |
+            openwrt/openwrt-E8820S-official-24.10-${{ github.run_number }}.tar.gz
